@@ -1,0 +1,147 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+////////////////////
+// ENUMS
+////////////////////
+
+enum WorldRole {
+  MJ
+  PLAYER
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+}
+
+////////////////////
+// MODELS
+////////////////////
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  username      String
+  passwordHash  String
+
+  worldsOwned   World[]        @relation("WorldOwner")
+  memberships   WorldMember[]
+  characters    Character[]
+  diceRolls     DiceRoll[]
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model World {
+  id            String         @id @default(uuid())
+  name          String
+  description   String?
+
+  ownerId       String
+  owner         User           @relation("WorldOwner", fields: [ownerId], references: [id])
+
+  members       WorldMember[]
+  campaigns     Campaign[]
+  characters    Character[]
+  invitations   Invitation[]
+  diceRolls     DiceRoll[]
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+}
+
+model WorldMember {
+  id            String     @id @default(uuid())
+
+  worldId       String
+  userId        String
+  role          WorldRole
+
+  world         World      @relation(fields: [worldId], references: [id])
+  user          User       @relation(fields: [userId], references: [id])
+
+  joinedAt      DateTime   @default(now())
+
+  @@unique([worldId, userId])
+}
+
+model Campaign {
+  id            String     @id @default(uuid())
+
+  worldId       String
+  world         World      @relation(fields: [worldId], references: [id])
+
+  name          String
+  description   String?
+  isActive      Boolean    @default(false)
+
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  deletedAt     DateTime?
+}
+
+model Character {
+  id            String     @id @default(uuid())
+
+  userId        String
+  worldId       String
+
+  name          String
+
+  user          User       @relation(fields: [userId], references: [id])
+  world         World      @relation(fields: [worldId], references: [id])
+
+  diceRolls     DiceRoll[]
+
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  deletedAt     DateTime?
+
+  @@unique([userId, worldId])
+}
+
+model Invitation {
+  id            String             @id @default(uuid())
+
+  worldId       String
+  world         World              @relation(fields: [worldId], references: [id])
+
+  email         String?
+  code          String             @unique
+  status        InvitationStatus   @default(PENDING)
+
+  createdAt     DateTime           @default(now())
+  expiresAt     DateTime
+}
+
+model DiceRoll {
+  id            String     @id @default(uuid())
+
+  worldId       String
+  userId        String
+  characterId   String?
+
+  diceType      String
+  result        Int
+
+  world         World      @relation(fields: [worldId], references: [id])
+  user          User       @relation(fields: [userId], references: [id])
+  character     Character? @relation(fields: [characterId], references: [id])
+
+  createdAt     DateTime   @default(now())
+}
