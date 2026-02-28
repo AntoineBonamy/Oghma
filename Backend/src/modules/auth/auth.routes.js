@@ -13,5 +13,6 @@ router.post("/refresh", authController.refresh);
 router.get("/all", authMiddleware, authController.getAllUsers);
 router.get("/me", authMiddleware, authController.me);
 router.post("/logout", authMiddleware, authController.logout);
+router.delete("/delete", authMiddleware, authController.deleteMe);
 
 export default router;

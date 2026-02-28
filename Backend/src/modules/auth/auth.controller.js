@@ -220,3 +220,26 @@ export const logout = async (req, res) => {
     res.status(500).json({ message: "Erreur lors de la déconnexion" });
   }
 };
+
+/* DELETE USER */
+
+import { deleteUserById } from "./user.model.js";
+
+export const deleteMe = async (req, res) => {
+  try {
+    const userId = req.userId;
+
+    // 1️⃣ Supprimer tous les refresh tokens liés
+    await prisma.refreshToken.deleteMany({
+      where: { userId },
+    });
+
+    // 2️⃣ Supprimer l'utilisateur
+    await deleteUserById(userId);
+
+    res.status(200).json({ message: "Compte supprimé avec succès" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Erreur lors de la suppression du compte" });
+  }
+};
