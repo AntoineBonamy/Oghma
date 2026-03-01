@@ -9,6 +9,7 @@
     "nodemon": "^3.1.13"
   },
   "devDependencies": {
+    "@types/node": "^25.3.3",
     "dotenv": "^17.3.1",
     "prisma": "^7.4.1"
   },

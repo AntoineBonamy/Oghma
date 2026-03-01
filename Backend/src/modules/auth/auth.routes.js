@@ -1,6 +1,6 @@
 import express from "express";
 import * as authController from "./auth.controller.js";
-import authMiddleware from "../../middlewares/auth.middleware.js";
+import authenticate from "../../middlewares/authenticate.js";
 
 const router = express.Router();
 
@@ -10,9 +10,9 @@ router.post("/login", authController.login);
 router.post("/refresh", authController.refresh);
 
 // PROTECTED
-router.get("/all", authMiddleware, authController.getAllUsers);
-router.get("/me", authMiddleware, authController.me);
-router.post("/logout", authMiddleware, authController.logout);
-router.delete("/delete", authMiddleware, authController.deleteMe);
+router.get("/all", authenticate, authController.getAllUsers);
+router.get("/me", authenticate, authController.me);
+router.post("/logout", authenticate, authController.logout);
+router.delete("/delete", authenticate, authController.deleteMe);
 
 export default router;
