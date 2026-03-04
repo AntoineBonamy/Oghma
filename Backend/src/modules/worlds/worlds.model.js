@@ -3,13 +3,27 @@ import { prisma } from "../../lib/prismaClient.js";
 /* CREATE WORLD */
 
 export const createWorld = async ({ name, description, ownerId }) => {
-  return prisma.world.create({
+  return prisma.$transaction(async (tx) => {
+    // Création du monde
+    const world = await tx.world.create({
     data: {
       name,
       description,
       ownerId,
     },
   });
+
+  // Ajouter le owner comme mebre MJ
+  await tx.worldMember.create({
+    data: {
+      worldId: world.id,
+      userId: ownerId,
+      role: "MJ",
+    },
+  });
+
+  return world;
+  })
 };
 
 /* GET WORLDS BY USER */
