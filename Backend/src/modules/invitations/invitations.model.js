@@ -10,7 +10,7 @@ export const createInvitation = async (data) => {
 
 /* GET INVITATION BY EMAIL */
 
-export const findPendingInvitationByEmail = async (email) => {
+export const findPendingInvitationsByEmail = async (email) => {
     return prisma.invitation.findMany({
         where: {
             email,
