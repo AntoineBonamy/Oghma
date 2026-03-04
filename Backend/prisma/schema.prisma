@@ -133,8 +133,9 @@ model Invitation {
   worldId       String
   world         World              @relation(fields: [worldId], references: [id])
 
-  email         String?
+  email         String
   code          String             @unique
+  role          WorldRole          @default(PLAYER)
   status        InvitationStatus   @default(PENDING)
 
   createdAt     DateTime           @default(now())
