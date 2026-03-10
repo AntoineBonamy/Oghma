@@ -5,6 +5,7 @@ import worldRoutes from "./src/modules/worlds/worlds.routes.js";
 import invitationRoutes from "./src/modules/invitations/invitations.routes.js";
 import worldMemberRoutes from "./src/modules/world members/worldMember.routes.js";
 import campaignRoutes from "./src/modules/campaigns/campaign.routes.js";
+import characterRoutes from "./src/modules/characters/characters.routes.js";
 
 export const app = express();
 
@@ -18,6 +19,7 @@ app.use("/api/worlds", worldRoutes);
 app.use("/api", invitationRoutes);
 app.use("/api/worlds", worldMemberRoutes);
 app.use("/api/worlds", campaignRoutes);
+app.use("/api", characterRoutes);
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
