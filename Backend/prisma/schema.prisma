@@ -32,18 +32,18 @@ enum InvitationStatus {
 ////////////////////
 
 model User {
-  id            String         @id @default(uuid())
-  email         String         @unique
-  username      String
-  passwordHash  String
+  id           String @id @default(uuid())
+  email        String @unique
+  username     String
+  passwordHash String
 
-  worldsOwned   World[]        @relation("WorldOwner")
-  memberships   WorldMember[]
-  characters    Character[]
-  diceRolls     DiceRoll[]
+  worldsOwned World[]       @relation("WorldOwner")
+  memberships WorldMember[]
+  characters  Character[]
+  diceRolls   DiceRoll[]
 
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   refreshTokens RefreshToken[]
 }
@@ -59,102 +59,106 @@ model RefreshToken {
 }
 
 model World {
-  id            String         @id @default(uuid())
-  name          String
-  description   String?
+  id          String  @id @default(uuid())
+  name        String
+  description String?
 
-  ownerId       String
-  owner         User           @relation("WorldOwner", fields: [ownerId], references: [id])
+  ownerId String
+  owner   User   @relation("WorldOwner", fields: [ownerId], references: [id])
 
-  members       WorldMember[]
-  campaigns     Campaign[]
-  characters    Character[]
-  invitations   Invitation[]
-  diceRolls     DiceRoll[]
+  members     WorldMember[]
+  campaigns   Campaign[]
+  characters  Character[]
+  invitations Invitation[]
+  diceRolls   DiceRoll[]
 
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  deletedAt     DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 }
 
 model WorldMember {
-  id            String     @id @default(uuid())
+  id String @id @default(uuid())
 
-  worldId       String
-  userId        String
-  role          WorldRole
+  worldId String
+  userId  String
+  role    WorldRole
 
-  world         World      @relation(fields: [worldId], references: [id])
-  user          User       @relation(fields: [userId], references: [id])
+  world World @relation(fields: [worldId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
 
-  joinedAt      DateTime   @default(now())
+  joinedAt DateTime @default(now())
 
   @@unique([worldId, userId])
 }
 
 model Campaign {
-  id            String     @id @default(uuid())
+  id String @id @default(uuid())
 
-  worldId       String
-  world         World      @relation(fields: [worldId], references: [id])
+  worldId String
+  world   World  @relation(fields: [worldId], references: [id])
 
-  name          String
-  description   String?
-  isActive      Boolean    @default(false)
+  name        String
+  description String?
+  isActive    Boolean @default(false)
 
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-  deletedAt     DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 }
 
 model Character {
-  id            String     @id @default(uuid())
+  id String @id @default(uuid())
 
-  userId        String
-  worldId       String
+  userId  String
+  worldId String?
 
-  name          String
+  name String
 
-  user          User       @relation(fields: [userId], references: [id])
-  world         World      @relation(fields: [worldId], references: [id])
+  isTemplate Boolean @default(true)
 
-  diceRolls     DiceRoll[]
+  parentCharacterID String?
+  parentCharacter   Character?  @relation("CharacterCopies", fields: [parentCharacterID], references: [id])
+  copies            Character[] @relation("CharacterCopies")
 
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-  deletedAt     DateTime?
+  user  User   @relation(fields: [userId], references: [id])
+  world World? @relation(fields: [worldId], references: [id])
 
-  @@unique([userId, worldId])
+  diceRolls DiceRoll[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 }
 
 model Invitation {
-  id            String             @id @default(uuid())
+  id String @id @default(uuid())
 
-  worldId       String
-  world         World              @relation(fields: [worldId], references: [id])
+  worldId String
+  world   World  @relation(fields: [worldId], references: [id])
 
-  email         String
-  code          String             @unique
-  role          WorldRole          @default(PLAYER)
-  status        InvitationStatus   @default(PENDING)
+  email  String
+  code   String           @unique
+  role   WorldRole        @default(PLAYER)
+  status InvitationStatus @default(PENDING)
 
-  createdAt     DateTime           @default(now())
-  expiresAt     DateTime
+  createdAt DateTime @default(now())
+  expiresAt DateTime
 }
 
 model DiceRoll {
-  id            String     @id @default(uuid())
+  id String @id @default(uuid())
 
-  worldId       String
-  userId        String
-  characterId   String?
+  worldId     String
+  userId      String
+  characterId String?
 
-  diceType      String
-  result        Int
+  diceType String
+  result   Int
 
-  world         World      @relation(fields: [worldId], references: [id])
-  user          User       @relation(fields: [userId], references: [id])
-  character     Character? @relation(fields: [characterId], references: [id])
+  world     World      @relation(fields: [worldId], references: [id])
+  user      User       @relation(fields: [userId], references: [id])
+  character Character? @relation(fields: [characterId], references: [id])
 
-  createdAt     DateTime   @default(now())
+  createdAt DateTime @default(now())
 }
