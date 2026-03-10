@@ -13,7 +13,7 @@ export const createWorld = async ({ name, description, ownerId }) => {
     },
   });
 
-  // Ajouter le owner comme mebre MJ
+  // Ajouter le owner comme membre MJ
   await tx.worldMember.create({
     data: {
       worldId: world.id,

@@ -1,6 +1,6 @@
 import { prisma } from "../lib/prismaClient.js";
 
-export const isWorldMember = async (req, res, next) => {
+export const isWorldMJ = async (req, res, next) => {
   try {
     const { worldId } = req.params;
 
@@ -13,17 +13,16 @@ export const isWorldMember = async (req, res, next) => {
       },
     });
 
-    if (!membership) {
+    if (!membership || membership.role !== "MJ") {
       return res.status(403).json({
-        message: "Accès interdit",
+        message: "Permission MJ requise",
       });
     }
-    req.membership = membership;
 
     next();
   } catch (error) {
     return res.status(500).json({
-      message: "Erreur de vérification des permissions",
+      message: "Erreur de permission",
     });
   }
 };
