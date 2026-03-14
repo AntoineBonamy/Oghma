@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prismaClient.js";
+import { ForbiddenError } from "../lib/errors.js";
 
 export const isWorldMember = async (req, res, next) => {
   try {
@@ -13,17 +14,11 @@ export const isWorldMember = async (req, res, next) => {
       },
     });
 
-    if (!membership) {
-      return res.status(403).json({
-        message: "Accès interdit",
-      });
-    }
+    if (!membership) throw new ForbiddenError("Accès interdit.");
     req.membership = membership;
 
     next();
   } catch (error) {
-    return res.status(500).json({
-      message: "Erreur de vérification des permissions",
-    });
+    next();
   }
 };

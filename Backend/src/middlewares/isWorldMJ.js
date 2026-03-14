@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prismaClient.js";
+import { ForbiddenError } from "../lib/errors.js";
 
 export const isWorldMJ = async (req, res, next) => {
   try {
@@ -13,16 +14,11 @@ export const isWorldMJ = async (req, res, next) => {
       },
     });
 
-    if (!membership || membership.role !== "MJ") {
-      return res.status(403).json({
-        message: "Permission MJ requise",
-      });
-    }
+    if (!membership || membership.role !== "MJ") throw new ForbiddenError("Réservé au Maître du Jeu.");
 
+    req.membership = membership;
     next();
   } catch (error) {
-    return res.status(500).json({
-      message: "Erreur de permission",
-    });
+    next();
   }
 };

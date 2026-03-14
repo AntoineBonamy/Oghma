@@ -9,63 +9,61 @@ import {
   findInvitationsByWorld,
 } from "./invitations.model.js";
 
+import {
+  BadRequestError,
+  NotFoundError,
+  ForbiddenError,
+  ConflictError,
+} from "../../lib/errors.js";
+
 // SEND INVITATION
 
-export const sendInvitationController = async (req, res) => {
+export const sendInvitationController = async (req, res, next) => {
   try {
     const { email, role } = req.body;
     const { worldId } = req.params;
 
-    if (!email) {
-      return res.status(400).json({ message: "Email requis" });
-    }
+    if (!email) throw new BadRequestError("Email requis.");
 
     // Vérifier que l'utilisateur existe
-    const userToinvite = await prisma.user.findUnique({
-        where: {
-            email
-        },
+    const userToInvite = await prisma.user.findUnique({
+      where: {
+        email,
+      },
     });
 
-    if (!userToinvite) {
-        return res.status(404).json({
-            message: "Aucun utilisateur avec cet email",
-        });
-    }
+    if (!userToInvite)
+      throw new NotFoundError("Aucun utilisateur avec cet email.");
 
     // Vérifier que l'utilisateur n'est pas déjà membre
-    const existingUser = await prisma.worldMember.findUnique({
+    const existingMember = await prisma.worldMember.findUnique({
       where: {
         worldId_userId: {
           worldId,
-          userId: userToinvite.id,
+          userId: userToInvite.id,
         },
       },
     });
 
-    if (existingUser) {
-      return res.status(400).json({
-        message: "Cet utilisateur est déjà membre de ce monde",
-      });
-    }
+    if (existingMember)
+      throw new ConflictError("Cet utilisateur est déjà membre de ce monde.");
 
     // Vérifier qu'il n'a pas déjà une invitation en attente
     const existingInvitation = await prisma.invitation.findFirst({
-        where: {
-            worldId,
-            email,
-            status: "PENDING",
-            expiresAt: {
-                gt: new Date(),
-            },
+      where: {
+        worldId,
+        email,
+        status: "PENDING",
+        expiresAt: {
+          gt: new Date(),
         },
+      },
     });
 
-    if (existingInvitation) {
-        return res.status(400).json({
-            message: "Une invitation est déjà en attente pour cet utilisateur",
-        });
-    }
+    if (existingInvitation)
+      throw new ConflictError(
+        "Une invitation est déjà en attente pour cet utilisateur.",
+      );
 
     // Générer un code unique
     const code = crypto.randomBytes(32).toString("hex");
@@ -83,15 +81,13 @@ export const sendInvitationController = async (req, res) => {
 
     return res.status(201).json(invitation);
   } catch (error) {
-    return res.status(500).json({
-      message: "Erreur lors de l'envoi de l'invitation",
-    });
+    next(error);
   }
 };
 
 // GET MY INVITATIONS
 
-export const getMyInvitationsController = async (req, res) => {
+export const getMyInvitationsController = async (req, res, next) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.userId },
@@ -101,42 +97,31 @@ export const getMyInvitationsController = async (req, res) => {
 
     return res.json(invitations);
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      message: "Erreur lors de la récupération des invitations",
-    });
+    next(error);
   }
 };
 
 // ACCEPT INVITATION
 
-export const acceptInvitationController = async (req, res) => {
+export const acceptInvitationController = async (req, res, next) => {
   try {
     const { code } = req.params;
 
     const invitation = await findInvitationByCode(code);
 
-    if (!invitation) {
-      return res.status(404).json({ message: "Invitation introuvable" });
-    }
+    if (!invitation) throw new NotFoundError("Invitation introuvable.");
 
-    if (invitation.status !== "PENDING") {
-      return res.status(400).json({ message: "Invitation déjà traitée" });
-    }
-
-    if (invitation.expiresAt < new Date()) {
-      return res.status(400).json({ message: "Invitation expirée" });
-    }
+    if (invitation.status !== "PENDING")
+      throw new BadRequestError("Invitation déjà traitée.");
+    if (invitation.expiresAt < new Date())
+      throw new BadRequestError("Invitation expirée.");
 
     const user = await prisma.user.findUnique({
       where: { id: req.userId },
     });
 
-    if (user.email !== invitation.email) {
-      return res.status(403).json({
-        message: "Cette invitation ne vous est pas destinée",
-      });
-    }
+    if (user.email !== invitation.email)
+      throw new ForbiddenError("Cette invitation ne vous est pas destinée.");
 
     await prisma.$transaction(async (tx) => {
       await tx.worldMember.create({
@@ -155,16 +140,13 @@ export const acceptInvitationController = async (req, res) => {
 
     return res.json({ message: "Invitation acceptée" });
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      message: "Erreur lors de l'acceptation",
-    });
+    next(error);
   }
 };
 
 // GET WORLD INVITATIONS
 
-export const getWorldInvitationsController = async (req, res) => {
+export const getWorldInvitationsController = async (req, res, next) => {
   try {
     const { worldId } = req.params;
 
@@ -172,9 +154,6 @@ export const getWorldInvitationsController = async (req, res) => {
 
     return res.json(invitations);
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      message: "Erreur lors de la récupération des invitations du monde",
-    });
+    next(error);
   }
 };

@@ -1,5 +1,8 @@
 import express from "express";
 import cors from "cors";
+
+import { errorHandler } from "./src/middlewares/errorHandler.js";
+
 import authRoutes from "./src/modules/auth/auth.routes.js";
 import worldRoutes from "./src/modules/worlds/worlds.routes.js";
 import invitationRoutes from "./src/modules/invitations/invitations.routes.js";
@@ -24,3 +27,7 @@ app.use("/api", characterRoutes);
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
+
+//#===== ERROR HANDLER (doit rester en dernier) =====#
+
+app.use(errorHandler);

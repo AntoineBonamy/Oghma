@@ -1,4 +1,5 @@
 import * as CharacterModel from "./characters.models.js";
+import { NotFoundError } from "../../lib/errors.js";
 
 //////////////////////////////////////////////////
 // CHARACTER TEMPLATES (PERSONNAGES UTILISATEUR)
@@ -6,108 +7,74 @@ import * as CharacterModel from "./characters.models.js";
 
 // CREATE TEMPLATE CHARACTER CONTROLLER
 
-export const createCharacterTemplateController = async (req, res) => {
+export const createCharacterTemplateController = async (req, res, next) => {
   try {
-    const userId = req.userId;
-    const { name } = req.body;
-
     const character = await CharacterModel.createCharacterTemplate({
-      userId,
-      name,
+      userId: req.userId,
+      name: req.body.name,
     });
-
     res.status(201).json(character);
   } catch (error) {
-    res.status(500).json({
-      message: "Erreur lors de la création du personnage",
-    });
+    next(error);
   }
 };
 
 // GET USER CHARACTER TEMPLATE CONTROLLER
 
-export const getUserCharacterTemplatesController = async (req, res) => {
+export const getUserCharacterTemplatesController = async (req, res, next) => {
   try {
-    const userId = req.userId;
-
     const characters = await CharacterModel.getUserCharacterTemplates({
-      userId,
+      userId: req.userId,
     });
-
     res.json(characters);
   } catch (error) {
-    res.status(500).json({
-      message: "Erreur lors de la récupération des personnages",
-    });
+    next(error);
   }
 };
 
 // GET ONE TEMPLATE CHARACTER
 
-export const getCharacterTemplateController = async (req, res) => {
+export const getCharacterTemplateController = async (req, res, next) => {
   try {
-    const userId = req.userId;
-    const { characterId } = req.params;
-
     const character = await CharacterModel.getCharacterTemplateById({
-      characterId,
-      userId,
+      characterId: req.params.characterId,
+      userId: req.userId,
     });
 
-    if (!character) {
-      return res.status(404).json({
-        message: "Personnage non trouvé",
-      });
-    }
+    if (!character) throw new NotFoundError("Personnage non trouvé.");
 
     res.json(character);
   } catch (error) {
-    res.status(500).json({
-      message: "Erreur lors de la récupération du personnage",
-    });
+    next(error);
   }
 };
 
 // UPDATE TEMPLATE CHARACTER
 
-export const updateCharacterTemplateController = async (req, res) => {
+export const updateCharacterTemplateController = async (req, res, next) => {
   try {
-    const userId = req.userId;
-    const { characterId } = req.params;
-
     const updated = await CharacterModel.updateCharacterTemplate({
-      characterId,
-      userId,
+      characterId: req.params.characterId,
+      userId: req.userId,
       data: req.body,
     });
-
     res.json(updated);
   } catch (error) {
-    res.status(500).json({
-      message: "Erreur lors de la mise à jour du personnage",
-    });
+    next(error);
   }
 };
 
-// DELETE TEMPLATE CHARACTER 
+// DELETE TEMPLATE CHARACTER
 
-export const deleteCharacterTemplateController = async (req, res) => {
+export const deleteCharacterTemplateController = async (req, res, next) => {
   try {
-    const userId = req.userId;
-    const { characterId } = req.params;
-
     await CharacterModel.deleteCharacterTemplate({
-      characterId,
-      userId,
+      characterId: req.params.characterId,
+      userId: req.userId,
     });
-
-    res.json({
-      message: "Personnage supprimé",
-    });
+    res.json({ message: "Personnage supprimé." });
   } catch (error) {
-    res.status(500).json({
-      message: "Erreur lors de la suppression du personnage",
-    });
+    next(error);
   }
 };
 
@@ -117,107 +84,74 @@ export const deleteCharacterTemplateController = async (req, res) => {
 
 // ADD CHARACTER TO WORLD
 
-export const addCharacterToWorldController = async (req, res) => {
+export const addCharacterToWorldController = async (req, res, next) => {
   try {
-    const { worldId } = req.params;
-    const userId = req.userId;
-
-    const { templateId } = req.body;
-
     const character = await CharacterModel.addCharacterToWorld({
-      templateId,
-      worldId,
-      userId,
+      templateId: req.body.templateId,
+      worldId: req.params.worldId,
+      userId: req.userId,
     });
-
     res.status(201).json(character);
   } catch (error) {
-    res.status(500).json({
-      message: "Erreur lors de l'ajout du personnage au monde",
-    });
+    next(error);
   }
 };
 
 // GET ALL WORLD CHARACTERS
 
-export const getWorldCharactersController = async (req, res) => {
+export const getWorldCharactersController = async (req, res, next) => {
   try {
-    const { worldId } = req.params;
-
     const characters = await CharacterModel.getWorldCharacters({
-      worldId,
+      worldId: req.params.worldId,
     });
-
     res.json(characters);
   } catch (error) {
-    res.status(500).json({
-      message: "Erreur lors de la récupération des personnages du monde",
-    });
+    next(error);
   }
 };
 
 // GET ONE WORLD CHARACTER
 
-export const getWorldCharacterController = async (req, res) => {
+export const getWorldCharacterController = async (req, res, next) => {
   try {
-    const { worldId, characterId } = req.params;
-
     const character = await CharacterModel.getWorldCharacterById({
-      worldId,
-      characterId,
+      worldId: req.params.worldId,
+      characterId: req.params.characterId,
     });
 
-    if (!character) {
-      return res.status(404).json({
-        message: "Personnage non trouvé",
-      });
-    }
+    if (!character) throw new NotFoundError("Personnage non trouvé.");
 
     res.json(character);
   } catch (error) {
-    res.status(500).json({
-      message: "Erreur lors de la récupération du personnage du monde",
-    });
+    next(error);
   }
 };
 
 // UPDATE WORLD CHARACTER
 
-export const updateWorldCharacterController = async (req, res) => {
+export const updateWorldCharacterController = async (req, res, next) => {
   try {
-    const { worldId, characterId } = req.params;
-
     const updated = await CharacterModel.updateWorldCharacter({
-      worldId,
-      characterId,
+      worldId: req.params.worldId,
+      characterId: req.params.characterId,
       data: req.body,
     });
-
     res.json(updated);
   } catch (error) {
-    res.status(500).json({
-      message: "Erreur lors de la mise à jour du personnage",
-    });
+    next(error);
   }
 };
 
 // DELETE WORLD CHARACTER
 
-export const deleteWorldCharacterController = async (req, res) => {
+export const deleteWorldCharacterController = async (req, res, next) => {
   try {
-    const { worldId, characterId } = req.params;
-
     await CharacterModel.deleteWorldCharacter({
-      worldId,
-      characterId,
+      worldId: req.params.worldId,
+      characterId: req.params.characterId,
     });
-
-    res.json({
-      message: "Personnage supprimé du monde",
-    });
+    res.json({ message: "Personnage supprimé du monde." });
   } catch (error) {
-    res.status(500).json({
-      message: "Erreur lors de la suppression du personnage",
-    });
+    next(error);
   }
 };

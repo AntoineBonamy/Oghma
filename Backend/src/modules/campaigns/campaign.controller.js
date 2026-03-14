@@ -1,8 +1,9 @@
 import * as CampaignModel from "./campaign.model.js";
+import { NotFoundError } from "../../lib/errors.js";
 
 // CREATE CAMPAIGN CONTROLLER
 
-export const createCampaignController = async (req, res) => {
+export const createCampaignController = async (req, res, next) => {
   try {
     const { worldId } = req.params;
     const { name, description } = req.body;
@@ -15,15 +16,13 @@ export const createCampaignController = async (req, res) => {
 
     res.status(201).json(campaign);
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Erreur lors de la création de la campagne" });
+    next(error);
   }
 };
 
 // GET CAMPAIGNS BY WORLD ID CONTROLLER
 
-export const getCampaignsController = async (req, res) => {
+export const getCampaignsController = async (req, res, next) => {
   try {
     const { worldId } = req.params;
 
@@ -31,15 +30,13 @@ export const getCampaignsController = async (req, res) => {
 
     res.json(campaigns);
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Erreur lors de la récupération des campagnes" });
+    next(error);
   }
 };
 
 // GET CAMPAIGN BY ID CONTROLLER
 
-export const getCampaignController = async (req, res) => {
+export const getCampaignController = async (req, res, next) => {
   try {
     const { worldId, campaignId } = req.params;
 
@@ -48,21 +45,17 @@ export const getCampaignController = async (req, res) => {
       worldId,
     });
 
-    if (!campaign) {
-      return res.status(404).json({ error: "Campagne non trouvée" });
-    }
+    if (!campaign) throw new NotFoundError("Campagne non trouvée.");
 
     res.json(campaign);
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Erreur lors de la récupération de la campagne" });
+    next(error);
   }
 };
 
 // GET ACTIVATE CAMPAIGN CONTROLLER
 
-export const getActiveCampaignController = async (req, res) => {
+export const getActiveCampaignController = async (req, res, next) => {
   try {
     const { worldId } = req.params;
 
@@ -70,23 +63,17 @@ export const getActiveCampaignController = async (req, res) => {
       worldId,
     });
 
-    if (!campaign) {
-      return res.status(404).json({
-        error: "Campagne active non trouvée",
-      });
-    }
+    if (!campaign) throw new NotFoundError("Aucune campagne active.");
 
     res.json(campaign);
   } catch (error) {
-    return res
-      .status(500)
-      .json({ error: "Erreur lors de la récupération de la campagne active" });
+    next(error);
   }
 };
 
 // UPDATE CAMPAIGN CONTROLLER
 
-export const updateCampaignController = async (req, res) => {
+export const updateCampaignController = async (req, res, next) => {
   try {
     const { worldId, campaignId } = req.params;
     const { name, description } = req.body;
@@ -99,15 +86,13 @@ export const updateCampaignController = async (req, res) => {
 
     res.json(campaign);
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Erreur lors de la mise à jour de la campagne" });
+    next(error);
   }
 };
 
 // ACTIVATE CAMPAIGN CONTROLLER
 
-export const activateCampaignController = async (req, res) => {
+export const activateCampaignController = async (req, res, next) => {
   try {
     const { worldId, campaignId } = req.params;
 
@@ -118,15 +103,13 @@ export const activateCampaignController = async (req, res) => {
 
     res.json({ message: "Campagne activée" });
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Erreur lors de l'activation de la campagne" });
+    next(error);
   }
 };
 
 // DELETE CAMPAIGN CONTROLLER
 
-export const deleteCampaignController = async (req, res) => {
+export const deleteCampaignController = async (req, res, next) => {
   try {
     const { worldId, campaignId } = req.params;
 
@@ -137,8 +120,6 @@ export const deleteCampaignController = async (req, res) => {
 
     res.json({ message: "Campagne supprimée avec succès" });
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Erreur lors de la suppression de la campagne" });
+    next(error);
   }
 };

@@ -1,16 +1,11 @@
 import { getWorldMembers } from "./worldMember.model.js";
 
-export const getWorldMembersController = async (req, res) => {
+export const getWorldMembersController = async (req, res, next) => {
   try {
-    const { worldId } = req.params;
-
-    const members = await getWorldMembers(worldId);
+    const members = await getWorldMembers(req.params.worldId);
 
     return res.json(members);
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      message: "Erreur lors de la récupération des membres",
-    });
+    next(error);
   }
 };

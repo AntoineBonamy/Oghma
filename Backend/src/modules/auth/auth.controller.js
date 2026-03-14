@@ -1,33 +1,44 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { prisma } from "../../lib/prismaClient.js";
-import { signAccessToken, signRefreshToken } from "../../lib/jwt.js";
+
+import {
+  createUser,
+  findUserByEmail,
+  findAllUsers,
+  deleteUserById,
+} from "./user.model.js";
 import { hashToken, verifyToken } from "../../lib/hash.js";
+import { signAccessToken, signRefreshToken } from "../../lib/jwt.js";
 
+import authService from "./auth.service.js";
 
-import { createUser, findUserByEmail, findAllUsers } from "./user.model.js";
+import {
+  BadRequestError,
+  NotFoundError,
+  UnauthorizedError,
+  ConflictError,
+} from "../../lib/errors.js";
 
 /* REGISTER */
 
-export const register = async (req, res) => {
+export const register = async (req, res, next) => {
   try {
     const { email, password, username } = req.body;
 
     // Vérifications basiques
     if (!email || !password || !username) {
-      return res.status(400).json({
-        message: "Tous les champs sont obligatoires.",
-      });
+      throw new BadRequestError(
+        "Email, mot de passe et nom d'utilisateur requis.",
+      );
     }
 
     // Vérifier si l'utilisateur exister déjà
     const existingUser = await findUserByEmail(email);
     if (existingUser) {
-      return res.status(400).json({
-        message: "Cet email est déjà utilisé.",
-      });
+      throw new ConflictError("Cet email est déjà utilisé.");
     }
-    
+
     // Hash du mot de passe
     const passwordHash = await bcrypt.hash(password, 10);
 
@@ -46,42 +57,31 @@ export const register = async (req, res) => {
       createdAt: user.createdAt,
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      message: "Erreur lors de l'inscription",
-    });
+    next(err);
   }
 };
 
 /* LOGIN */
 
-import authService from "./auth.service.js";
-
-export const login = async (req, res) => {
+export const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
     // 1️⃣ Vérification des champs
     if (!email || !password) {
-      return res.status(400).json({
-        message: "Email et mot de passe requis",
-      });
+      throw new BadRequestError("Email et mot de passe requis.");
     }
 
     // 2️⃣ Vérifier que l'utilisateur existe
     const user = await findUserByEmail(email);
     if (!user) {
-      return res.status(401).json({
-        message: "Identifiants invalides",
-      });
+      throw new UnauthorizedError("Identifiants invalides.");
     }
 
     // 3️⃣ Vérifier le mot de passe
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
-      return res.status(401).json({
-        message: "Identifiants invalides",
-      });
+      throw new UnauthorizedError("Identifiants invalides.");
     }
 
     // 4️⃣ Générer tokens via le service
@@ -98,87 +98,88 @@ export const login = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      message: "Erreur lors de la connexion",
-    });
+    next(error);
   }
 };
 
 /* REFRESH */
-export const refresh = async (req, res) => {
-  const { refreshToken } = req.body;
-  if (!refreshToken) return res.sendStatus(401);
-
-  let payload;
+export const refresh = async (req, res, next) => {
   try {
-    payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-  } catch {
-    return res.sendStatus(401);
+    const { refreshToken } = req.body;
+    if (!refreshToken) throw new UnauthorizedError();
+
+    let payload;
+    try {
+      payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    } catch {
+      throw new UnauthorizedError("Token invalide ou expiré.");
+    }
+
+    const tokens = await prisma.refreshToken.findMany({
+      where: {
+        userId: payload.sub,
+        revoked: false,
+      },
+    });
+
+    const validToken = await Promise.any(
+      tokens.map((t) =>
+        verifyToken(refreshToken, t.tokenHash).then((valid) =>
+          valid ? t : null,
+        ),
+      ),
+    ).catch(() => null);
+
+    if (!validToken) throw new UnauthorizedError();
+
+    // rotation
+    await prisma.refreshToken.update({
+      where: { id: validToken.id },
+      data: { revoked: true },
+    });
+
+    const newAccessToken = signAccessToken(payload.sub);
+    const newRefreshToken = signRefreshToken(payload.sub);
+
+    const newHash = await hashToken(newRefreshToken);
+
+    await prisma.refreshToken.create({
+      data: {
+        tokenHash: newHash,
+        userId: payload.sub,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      },
+    });
+
+    res.json({
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+    });
+  } catch (error) {
+    next(error);
   }
-
-  const tokens = await prisma.refreshToken.findMany({
-    where: {
-      userId: payload.sub,
-      revoked: false
-    }
-  });
-
-  const validToken = await Promise.any(
-    tokens.map(t =>
-      verifyToken(refreshToken, t.tokenHash).then(valid => valid ? t : null)
-    )
-  ).catch(() => null);
-
-  if (!validToken) return res.sendStatus(401);
-
-  // rotation
-  await prisma.refreshToken.update({
-    where: { id: validToken.id },
-    data: { revoked: true }
-  });
-
-  const newAccessToken = signAccessToken(payload.sub);
-  const newRefreshToken = signRefreshToken(payload.sub);
-
-  const newHash = await hashToken(newRefreshToken);
-
-  await prisma.refreshToken.create({
-    data: {
-      tokenHash: newHash,
-      userId: payload.sub,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-    }
-  });
-
-  res.json({
-    accessToken: newAccessToken,
-    refreshToken: newRefreshToken
-  });
-}
+};
 
 // #===== PROTECTED =====#
 
 /* GET ALL */
 
-export const getAllUsers = async (req, res) => {
-    try {
-        const data = await findAllUsers()
+export const getAllUsers = async (req, res, next) => {
+  try {
+    const data = await findAllUsers();
 
-        res.status(200).json(data)
-    } catch (error) {
-        
-    }
-}
+    res.status(200).json(data);
+  } catch (error) {
+    next(error);
+  }
+};
 
 /* ME */
 
-export const me = async (req, res) => {
+export const me = async (req, res, next) => {
   try {
-    const userId = req.userId;
-
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: req.userId },
       select: {
         id: true,
         email: true,
@@ -188,25 +189,22 @@ export const me = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(404).json({ message: "Utilisateur introuvable" });
+      throw new NotFoundError("Utilisateur introuvable.");
     }
 
     res.status(200).json(user);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Erreur serveur" });
+    next(error);
   }
 };
 
 /* LOGOUT */
 
-export const logout = async (req, res) => {
+export const logout = async (req, res, next) => {
   try {
-    const userId = req.userId;
-
     await prisma.refreshToken.updateMany({
       where: {
-        userId,
+        userId: req.userId,
         revoked: false,
       },
       data: {
@@ -216,16 +214,13 @@ export const logout = async (req, res) => {
 
     res.status(200).json({ message: "Déconnexion réussie" });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Erreur lors de la déconnexion" });
+    next(error);
   }
 };
 
-/* DELETE USER */
+/* DELETE ME */
 
-import { deleteUserById } from "./user.model.js";
-
-export const deleteMe = async (req, res) => {
+export const deleteMe = async (req, res, next) => {
   try {
     const userId = req.userId;
 
@@ -240,6 +235,6 @@ export const deleteMe = async (req, res) => {
     res.status(200).json({ message: "Compte supprimé avec succès" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Erreur lors de la suppression du compte" });
+    next(error);
   }
 };
