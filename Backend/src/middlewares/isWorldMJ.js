@@ -19,6 +19,6 @@ export const isWorldMJ = async (req, res, next) => {
     req.membership = membership;
     next();
   } catch (error) {
-    next();
+    next(error);
   }
 };
