@@ -1,7 +1,10 @@
+import AppRouter from "./router";
+import { AuthProvider } from "./contexts/Authcontext";
+
 function App() {
-  return <>
-  <p>Coucou</p>
-  </>;
+  return <AuthProvider>
+    <AppRouter />
+  </AuthProvider>
 }
 
 export default App;
