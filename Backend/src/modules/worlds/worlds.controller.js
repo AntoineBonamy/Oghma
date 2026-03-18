@@ -41,7 +41,7 @@ export const getUserWorldsController = async (req, res, next) => {
 
 export const getWorldByIdController = async (req, res, next) => {
   try {
-    const world = await findWorldById(req.params.id);
+    const world = await findWorldById(req.params.worldId);
 
     if (!world) throw new NotFoundError("Monde non trouvé.");
 
@@ -58,7 +58,7 @@ export const updateWorldController = async (req, res, next) => {
     const { name, description } = req.body;
 
     const world = await updateWorldById({
-      worldId: req.params.id,
+      worldId: req.params.worldId,
       data: {
         name,
         description,
@@ -76,7 +76,7 @@ export const updateWorldController = async (req, res, next) => {
 export const deleteWorldController = async (req, res, next) => {
   try {
     await deleteWorldById({
-      worldId: req.params.id,
+      worldId: req.params.worldId,
       userId: req.userId,
     });
 
