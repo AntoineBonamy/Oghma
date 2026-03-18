@@ -3,7 +3,7 @@ import { NotFoundError } from "../lib/errors.js";
 
 export const isWorldOwner = async (req, res, next) => {
   try {
-    const { id: worldId } = req.params;
+    const { worldId } = req.params;
 
     const world = await prisma.world.findFirst({
       where: {
