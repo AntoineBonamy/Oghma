@@ -14,8 +14,8 @@ const router = express.Router();
 
 router.post("/", authenticate, createWorldController);
 router.get("/", authenticate, getUserWorldsController);
-router.get("/:id", authenticate, getWorldByIdController);
-router.patch("/:id", authenticate, isWorldOwner, updateWorldController);
-router.delete("/:id", authenticate, isWorldOwner, deleteWorldController);
+router.get("/:worldId", authenticate, getWorldByIdController);
+router.patch("/:worldId", authenticate, isWorldOwner, updateWorldController);
+router.delete("/:worldId", authenticate, isWorldOwner, deleteWorldController);
 
 export default router;
