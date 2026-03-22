@@ -1,21 +1,17 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import type { ReactNode } from "react";
+import type { AuthUser } from "@/api/auth";
 
 ////////////////////
 // TYPES
 ////////////////////
 
-interface User {
-  id: string;
-  email: string;
-  username: string;
-}
-
 interface AuthContextType {
-  user: User | null;
+  user: AuthUser | null;
   accessToken: string | null;
-  login: (user: User, accessToken: string) => void;
+  login: (user: AuthUser, accessToken: string, refreshToken: string) => void;
   logout: () => void;
+  updateTokens: (accessToken: string, refreshToken: string) => void;
   isAuthenticated: boolean;
 }
 
@@ -30,7 +26,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 ////////////////////
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
 
   // Réhydratation depuis le localStorage au démarrage
@@ -39,15 +35,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const storedUser = localStorage.getItem("user");
 
     if (storedToken && storedUser) {
-      setAccessToken(storedToken);
-      setUser(JSON.parse(storedUser));
+      try {
+        setAccessToken(storedToken);
+        setUser(JSON.parse(storedUser));
+      } catch {
+        // JSON corrompu — on nettoie
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("user");
+      }
     }
   }, []);
 
-  const login = (user: User, accessToken: string) => {
+  const login = (user: AuthUser, accessToken: string, refreshToken: string) => {
     setUser(user);
     setAccessToken(accessToken);
     localStorage.setItem("accessToken", accessToken);
+    localStorage.setItem("refreshToken", refreshToken);
     localStorage.setItem("user", JSON.stringify(user));
   };
 
@@ -55,7 +59,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     setAccessToken(null);
     localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
     localStorage.removeItem("user");
+  };
+
+    // Utilisé par l'intercepteur axios pour mettre à jour les tokens silencieusement
+  const updateTokens = (accessToken: string, refreshToken: string) => {
+    setAccessToken(accessToken);
+    localStorage.setItem("accessToken", accessToken);
+    localStorage.setItem("refreshToken", refreshToken);
   };
 
   return (
@@ -65,6 +77,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         accessToken,
         login,
         logout,
+        updateTokens,
         isAuthenticated: !!accessToken,
       }}
     >
