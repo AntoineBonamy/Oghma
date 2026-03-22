@@ -2,8 +2,11 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/Authcontext";
 
 ////////////////////
-// PAGES (à créer)
+// PAGES
 ////////////////////
+
+// Home
+import HomePage from "@/pages/home/HomePage";
 
 // Auth
 import LoginPage from "@/pages/auth/LoginPage";
@@ -30,7 +33,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useAuth();
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
@@ -45,12 +48,13 @@ const AppRouter = () => {
     <BrowserRouter>
       <Routes>
         {/* Routes Publiques */}
+        <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 
         {/* Routes Protégées */}
         <Route
-          path="/"
+          path="/worlds"
           element={
             <ProtectedRoute>
               <WorldsPage />
