@@ -9,10 +9,12 @@ import type { AuthUser } from "@/api/auth";
 interface AuthContextType {
   user: AuthUser | null;
   accessToken: string | null;
+    isAuthenticated: boolean;
+  isLoading: boolean; // true tant que le localStorage n'a pas été lu
   login: (user: AuthUser, accessToken: string, refreshToken: string) => void;
   logout: () => void;
   updateTokens: (accessToken: string, refreshToken: string) => void;
-  isAuthenticated: boolean;
+
 }
 
 ////////////////////
@@ -28,22 +30,26 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true); // bloquant par défaut
 
   // Réhydratation depuis le localStorage au démarrage
   useEffect(() => {
-    const storedToken = localStorage.getItem("accessToken");
-    const storedUser = localStorage.getItem("user");
-
-    if (storedToken && storedUser) {
-      try {
+    try {
+      const storedToken = localStorage.getItem("accessToken");
+      const storedUser = localStorage.getItem("user");
+ 
+      if (storedToken && storedUser) {
         setAccessToken(storedToken);
         setUser(JSON.parse(storedUser));
-      } catch {
-        // JSON corrompu — on nettoie
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        localStorage.removeItem("user");
       }
+    } catch {
+      // JSON corrompu — on nettoie
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("user");
+    } finally {
+      // Dans tous les cas, on débloque le rendu
+      setIsLoading(false);
     }
   }, []);
 
@@ -75,10 +81,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       value={{
         user,
         accessToken,
+        isAuthenticated: !!accessToken,
+        isLoading,
         login,
         logout,
         updateTokens,
-        isAuthenticated: !!accessToken,
       }}
     >
       {children}

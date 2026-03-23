@@ -21,6 +21,9 @@ function formatDate(dateStr: string) {
     year: "numeric",
   });
 }
+
+// Nombre de caractères au-delà duquel on tronque
+const DESCRIPTION_THRESHOLD = 300;
  
 ////////////////////
 // ROLE BADGE
@@ -38,6 +41,34 @@ function RoleBadge({ role }: { role: "MJ" | "PLAYER" }) {
     >
       {role}
     </span>
+  );
+}
+
+////////////////////
+// EXPANDABLE DESCRIPTION
+////////////////////
+
+function ExpandableDescription({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const isLong = text.length > DESCRIPTION_THRESHOLD;
+  const displayed = isLong && !expanded
+    ? text.slice(0, DESCRIPTION_THRESHOLD).trimEnd() + "…"
+    : text;
+ 
+  return (
+    <div className="mt-4 border-t border-slate-800 pt-4">
+      <p className="text-sm text-slate-400 leading-relaxed whitespace-pre-wrap">
+        {displayed}
+      </p>
+      {isLong && (
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-2 text-xs text-violet-400 hover:text-violet-300 transition-colors"
+        >
+          {expanded ? "Réduire ↑" : "Lire la suite ↓"}
+        </button>
+      )}
+    </div>
   );
 }
  
@@ -185,7 +216,7 @@ export default function WorldDetailPage() {
           </div>
 
           {/* Ligne 2 : date à gauche, actions à droite — chacun peut rétrécir */}
-          <div className="flex items-center justify-between gap-3 mt-3">
+          <div className="flex items-center justify-between gap-2 mt-3">
 <p className="text-xs text-slate-600 shrink-0">
             Créé le {formatDate(world.createdAt)}
           </p>
@@ -213,10 +244,9 @@ export default function WorldDetailPage() {
           )}
         </div>
  
+ {/* Description expansible */}
         {world.description && (
-          <p className="mt-4 text-sm text-slate-400 leading-relaxed border-t border-slate-800 pt-4">
-            {world.description}
-          </p>
+          <ExpandableDescription text={world.description} />
         )}
       </div>
  

@@ -33,7 +33,19 @@ import InvitationsPage from "@/pages/invitations/InvitationsPage";
 ////////////////////
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  // Pendant la réhydratation du localStorage, on ne redirige pas encore
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <span className="text-slate-600 text-sm tracking-widest uppercase animate-pulse">
+          Chargement...
+        </span>
+
+      </div>
+    )
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;

@@ -73,7 +73,7 @@ function WorldCard({ world, isMJ, onDelete }: WorldCardProps) {
   return (
     <div
       onClick={() => navigate(`/worlds/${world.id}`)}
-      className="group relative bg-slate-900 border border-slate-800 hover:border-violet-700/50 rounded-xl p-5 cursor-pointer transition-all duration-200 hover:bg-slate-900/80 hover:shadow-lg hover:shadow-violet-950/20"
+      className="group relative bg-slate-900 border border-slate-800 hover:border-violet-700/50 rounded-xl p-5 cursor-pointer transition-all duration-200 hover:bg-slate-900/80 hover:shadow-lg hover:shadow-violet-950/20 flex flex-col"
     >
       {/* Accent top */}
       <div className="absolute top-0 left-5 right-5 h-px bg-linear-to-r from-transparent via-violet-700/30 to-transparent" />
@@ -97,7 +97,7 @@ function WorldCard({ world, isMJ, onDelete }: WorldCardProps) {
       </div>
 
       {/* Description */}
-      <p className="text-sm text-slate-500 line-clamp-2 min-h-10">
+      <p className="text-sm text-slate-500 line-clamp-3 flex-1 min-h-10 truncate">
         {world.description || (
           <span className="italic">Aucune description.</span>
         )}
