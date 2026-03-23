@@ -1,10 +1,11 @@
 import jwt from "jsonwebtoken";
+import { UnauthorizedError } from "../lib/errors.js";
 
 export default function authenticate(req, res, next) {
   const authHeader = req.headers.authorization;
 
   if (!authHeader) {
-    return res.status(401).json({ message: "Token manquant" });
+    return next(new UnauthorizedError("Token manquant."));
   }
 
   const token = authHeader.split(" ")[1];
@@ -17,6 +18,10 @@ export default function authenticate(req, res, next) {
 
     next();
   } catch (error) {
+    // TokenExpiredError, JsonWebTokenError, NotBeforeError → toujours 401
+    if (error instanceof jwt.JsonWebTokenError) {
+      return next(new UnauthorizedError("Token invalide ou expiré."));
+    }
     next(error);
   }
 }
