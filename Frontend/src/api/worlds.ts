@@ -87,3 +87,11 @@ export const getWorldCampaignsApi = async (worldId: string): Promise<Campaign[]>
   const { data } = await apiClient.get<Campaign[]>(`/worlds/${worldId}/campaigns`);
   return data;
 };
+
+export const removeMemberApi = async (
+  worldId: string,
+  userId: string
+): Promise<void> => {
+  await apiClient.delete(`/worlds/${worldId}/members/${userId}`);
+};
+ 

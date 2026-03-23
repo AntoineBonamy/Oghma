@@ -74,7 +74,7 @@ export const sendInvitationController = async (req, res, next) => {
     const invitation = await createInvitation({
       worldId,
       email,
-      role: role || "PLAYER",
+      role: "PLAYER",
       code,
       expiresAt,
     });
@@ -139,6 +139,35 @@ export const acceptInvitationController = async (req, res, next) => {
     });
 
     return res.json({ message: "Invitation acceptée" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// DECLINE INVITATION
+
+export const declineInvitationController = async (req, res, next) => {
+  try {
+    const { code } = req.params;
+
+    const invitation = await findInvitationByCode(code);
+
+    if (!invitation) throw new NotFoundError("Invitation introuvable.");
+    if (invitation.status !== "PENDING")
+      throw new BadRequestError("Invitation déjà traitée.");
+    if (invitation.expiresAt < new Date())
+      throw new BadRequestError("Invitation expirée.");
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId },
+    });
+
+    if (user.email !== invitation.email)
+      throw new ForbiddenError("Cette invitation ne vous est pas destinée.");
+
+    await updateInvitationStatus(invitation.id, "DECLINED");
+
+    return res.json({ message: "Invitation refusée." });
   } catch (error) {
     next(error);
   }

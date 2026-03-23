@@ -5,10 +5,12 @@ import {
   getWorldMembersApi,
   getWorldCampaignsApi,
   deleteWorldApi,
+  removeMemberApi,
 } from "@/api/worlds";
 import type { World, WorldMember, Campaign } from "@/api/worlds";
 import { useAuth } from "@/contexts/Authcontext";
 import Button from "@/components/Button";
+import InvitationsPanel from "@/components/invitations/InvitationsPanel";
  
 ////////////////////
 // HELPERS
@@ -101,6 +103,148 @@ function SectionHeader({
     </div>
   );
 }
+
+////////////////////
+// INVITATIONS MODAL
+////////////////////
+ 
+function InvitationsModal({
+  worldId,
+  onClose,
+}: {
+  worldId: string;
+  onClose: () => void;
+}) {
+  // Fermeture sur Échap
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [onClose]);
+ 
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+ 
+      {/* Panel */}
+      <div
+        className="relative z-10 w-full max-w-md bg-slate-900 border border-slate-700/60 rounded-2xl shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header modal */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
+          <h2 className="text-sm font-semibold text-slate-100">
+            Inviter des joueurs
+          </h2>
+          <button
+            onClick={onClose}
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+ 
+        {/* Contenu */}
+        <div className="p-5">
+          <InvitationsPanel worldId={worldId} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+////////////////////
+// MEMBER ROW
+////////////////////
+
+function MemberRow({
+  member,
+  isMe,
+  isMJ,
+  removing,
+  onRemove,
+}: {
+  member: WorldMember;
+  isMe: boolean;
+  isMJ: boolean;
+  removing: boolean;
+  onRemove: (userId: string) => void;
+}) {
+  const [confirm, setConfirm] = useState(false);
+ 
+  const handleClick = () => {
+    if (!confirm) {
+      setConfirm(true);
+      setTimeout(() => setConfirm(false), 3000);
+      return;
+    }
+    onRemove(member.userId);
+  };
+ 
+  return (
+    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-950/40 border border-slate-800 group">
+      <div className="flex items-center gap-2.5 min-w-0">
+        <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-bold text-slate-400 shrink-0">
+          {member.user.username.slice(0, 2).toUpperCase()}
+        </div>
+        <div className="min-w-0">
+          <div className="flex gap-2 mb-1">
+<p className="text-sm text-slate-300 truncate">
+            {member.user.username} 
+            {isMe && (
+              <span className="ml-2 text-[9px] text-slate-600 tracking-wider uppercase">
+                (vous)
+              </span>
+            )}
+          </p>
+          <RoleBadge role={member.role} />
+          </div>
+          
+          <p className="text-xs text-slate-600">
+            Depuis le {formatDate(member.joinedAt)}
+          </p>
+        </div>
+      </div>
+ 
+      <div className="flex items-center gap-2 shrink-0"> 
+        {/* Bouton retrait — MJ uniquement, pas sur soi-même */}
+        {isMJ && !isMe && (
+          <button
+            onClick={handleClick}
+            disabled={removing}
+            className={[
+              "text-[10px] font-semibold px-2 py-0.5 rounded border transition-all duration-200",
+              confirm
+                ? "text-red-400 bg-red-950/60 border-red-900/50 opacity-100"
+                : "text-slate-500 bg-slate-800/60 border-slate-700/30 hover:text-red-400 hover:bg-red-950/40 hover:border-red-900/30",
+              removing ? "cursor-not-allowed opacity-40" : "",
+            ].join(" ")}
+          >
+            {removing ? "…" : confirm ? "Confirmer ?" : "Retirer"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
  
 ////////////////////
 // WORLD DETAIL PAGE
@@ -118,6 +262,8 @@ export default function WorldDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
  
   const isMJ = world?.ownerId === user?.id;
  
@@ -153,6 +299,19 @@ export default function WorldDetailPage() {
       setConfirmDelete(false);
     }
   };
+
+    const handleRemoveMember = async (userId: string) => {
+    if (!worldId) return;
+    try {
+      setRemovingMemberId(userId);
+      await removeMemberApi(worldId, userId);
+      setMembers((prev) => prev.filter((m) => m.userId !== userId));
+    } catch {
+      // On pourra ajouter un toast ici plus tard
+    } finally {
+      setRemovingMemberId(null);
+    }
+  };
  
   // ── LOADING ──
   if (loading) {
@@ -186,6 +345,7 @@ export default function WorldDetailPage() {
   const activeCampaign = campaigns.find((c) => c.isActive);
  
   return (
+    <>
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
  
       {/* Back */}
@@ -328,55 +488,45 @@ export default function WorldDetailPage() {
           title="Membres"
           count={members.length}
           action={
-            isMJ ? (
-              <Link
-                to={`/worlds/${worldId}/invitations`}
-                className="text-xs text-violet-400 hover:text-violet-300 transition-colors"
-              >
-                + Inviter
-              </Link>
-            ) : undefined
-          }
+              isMJ ? (
+                <button
+                  onClick={() => setInviteModalOpen(true)}
+                  className="text-xs text-violet-400 hover:text-violet-300 transition-colors"
+                >
+                  + Inviter
+                </button>
+              ) : undefined
+            }
         />
  
         {members.length === 0 ? (
           <p className="text-sm text-slate-600 italic">Aucun membre.</p>
         ) : (
           <div className="space-y-2">
-            {members.map((member) => {
-              const isMe = member.userId === user?.id;
-              return (
-                <div
+            {members.map((member) => (
+              <MemberRow
                   key={member.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-slate-950/40 border border-slate-800"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-bold text-slate-400 shrink-0">
-                      {member.user.username.slice(0, 2).toUpperCase()}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm text-slate-300 truncate">
-                        {member.user.username}
-                        {isMe && (
-                          <span className="ml-2 text-[9px] text-slate-600 tracking-wider uppercase">
-                            (vous)
-                          </span>
-                        )}
-                      </p>
-                      <p className="text-xs text-slate-600">
-                        Depuis le {formatDate(member.joinedAt)}
-                      </p>
-                    </div>
-                  </div>
-                  <RoleBadge role={member.role} />
-                </div>
-              );
-            })}
+                  member={member}
+                  isMe={member.userId === user?.id}
+                  isMJ={isMJ}
+                  removing={removingMemberId === member.userId}
+                  onRemove={handleRemoveMember}
+                />
+            ))}
           </div>
         )}
       </div>
  
     </div>
+
+          {/* ── MODAL INVITATIONS ── */}
+      {inviteModalOpen && worldId && (
+        <InvitationsModal
+          worldId={worldId}
+          onClose={() => setInviteModalOpen(false)}
+        />
+      )}
+    </>
   );
 }
  

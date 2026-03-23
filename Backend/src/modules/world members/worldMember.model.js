@@ -17,3 +17,11 @@ export const getWorldMembers = async (worldId) => {
         }
     })
 }
+
+export const removeWorldMember = async (worldId, userId) => {
+  return prisma.worldMember.delete({
+    where: {
+      worldId_userId: { worldId, userId },
+    },
+  });
+};
