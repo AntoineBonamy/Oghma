@@ -16,6 +16,8 @@ import RegisterPage from "@/pages/auth/RegisterPage";
 // Worlds
 import WorldsPage from "@/pages/worlds/WorldsPage";
 import WorldDetailPage from "@/pages/worlds/WorldDetailPage";
+import CreateWorldPage from "@/pages/worlds/CreateWorldPage";
+import EditWorldPage from "@/pages/worlds/EditWorldPage";
 
 // Campaigns
 import CampaignDetailPage from "@/pages/campaigns/CampaignDetailPage";
@@ -34,7 +36,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useAuth();
 
   if (!isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return <Layout>{children}</Layout>;
@@ -62,12 +64,28 @@ const AppRouter = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/worlds/new"
+          element={
+            <ProtectedRoute>
+              <CreateWorldPage />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/worlds/:worldId"
           element={
             <ProtectedRoute>
               <WorldDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/worlds/:worldId/edit"
+          element={
+            <ProtectedRoute>
+              <EditWorldPage />
             </ProtectedRoute>
           }
         />
@@ -106,4 +124,4 @@ const AppRouter = () => {
   );
 };
 
-export default AppRouter
+export default AppRouter;
