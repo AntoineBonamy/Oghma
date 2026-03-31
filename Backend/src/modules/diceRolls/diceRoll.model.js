@@ -23,7 +23,7 @@ const rollDice = (faces) => {
 // CREATE
 ////////////////////
 
-export const createDiceRoll = async ({ worldId, userId, diceType, characterId }) => {
+export const createDiceRoll = async ({ worldId, userId, diceType, characterId, sessionId }) => {
   if (!VALID_DICE_TYPES.includes(diceType)) {
     throw new BadRequestError(
       `Type de dé invalide. Valeurs acceptées : ${VALID_DICE_TYPES.join(", ")}.`
@@ -40,6 +40,7 @@ export const createDiceRoll = async ({ worldId, userId, diceType, characterId })
       diceType,
       result,
       ...(characterId ? { characterId } : {}),
+      ...(sessionId ? {sessionId} : {}),
     },
     include: {
       user: {
@@ -53,13 +54,32 @@ export const createDiceRoll = async ({ worldId, userId, diceType, characterId })
 };
 
 ////////////////////
-// GET HISTORY
+// GET HISTORY (par monde)
 ////////////////////
 
 export const getDiceRollsByWorld = async ({ worldId }) => {
   return prisma.diceRoll.findMany({
     where: { worldId },
     orderBy: { createdAt: "desc" },
+    include: {
+      user: {
+        select: { id: true, username: true },
+      },
+      character: {
+        select: { id: true, name: true },
+      },
+    },
+  });
+};
+
+////////////////////
+// GET HISTORY (par session)
+////////////////////
+ 
+export const getDiceRollsBySession = async ({ sessionId }) => {
+  return prisma.diceRoll.findMany({
+    where: { sessionId },
+    orderBy: { createdAt: "asc" },
     include: {
       user: {
         select: { id: true, username: true },
