@@ -21,6 +21,8 @@ import EditWorldPage from "@/pages/worlds/EditWorldPage";
 
 // Campaigns
 import CampaignDetailPage from "@/pages/campaigns/CampaignDetailPage";
+import CreateCampaignPage from "@/pages/campaigns/CreateCampaignPage";
+import EditCampaignPage from "@/pages/campaigns/EditCampaignPage";
 
 // Characters
 import CharactersPage from "@/pages/characters/CharactersPage";
@@ -67,7 +69,7 @@ const AppRouter = () => {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 
-        {/* Routes Protégées */}
+        {/* Routes Protégées -- Worlds */}
         <Route
           path="/worlds"
           element={
@@ -102,6 +104,16 @@ const AppRouter = () => {
           }
         />
 
+        {/* Routes Protégées -- Campaigns */}
+          <Route
+          path="/worlds/:worldId/campaigns/new"
+          element={
+            <ProtectedRoute>
+              <CreateCampaignPage />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/worlds/:worldId/campaigns/:campaignId"
           element={
@@ -112,6 +124,17 @@ const AppRouter = () => {
         />
 
         <Route
+          path="/worlds/:worldId/campaigns/:campaignId/edit"
+          element={
+            <ProtectedRoute>
+              <EditCampaignPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Routes Protégées — Characters */}
+
+        <Route
           path="/characters"
           element={
             <ProtectedRoute>
@@ -119,6 +142,8 @@ const AppRouter = () => {
             </ProtectedRoute>
           }
         />
+
+        {/* Routes Protégées — Invitations */}
 
         <Route
           path="/invitations"

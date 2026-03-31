@@ -9,7 +9,6 @@ import {
 } from "@/api/worlds";
 import type { World, WorldMember, Campaign } from "@/api/worlds";
 import { useAuth } from "@/contexts/Authcontext";
-import Button from "@/components/Button";
 import InvitationsPanel from "@/components/invitations/InvitationsPanel";
  
 ////////////////////
@@ -27,6 +26,32 @@ function formatDate(dateStr: string) {
 // Nombre de caractères au-delà duquel on tronque
 const DESCRIPTION_THRESHOLD = 300;
  
+////////////////////
+// ICONS
+////////////////////
+ 
+function IconPencil() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+    </svg>
+  );
+}
+ 
+function IconTrash() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6M14 11v6" />
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </svg>
+  );
+}
+
 ////////////////////
 // ROLE BADGE
 ////////////////////
@@ -101,6 +126,58 @@ function SectionHeader({
       </div>
       {action}
     </div>
+  );
+}
+
+////////////////////
+// ICON BUTTON (mobile) + TEXT BUTTON (desktop)
+////////////////////
+ 
+interface ResponsiveActionButtonProps {
+  variant: "ghost" | "danger";
+  icon: React.ReactNode;
+  label: string;
+  loading?: boolean;
+  onClick: () => void;
+}
+ 
+function ResponsiveActionButton({
+  variant,
+  icon,
+  label,
+  loading = false,
+  onClick,
+}: ResponsiveActionButtonProps) {
+  const base =
+    "inline-flex items-center justify-center rounded font-semibold uppercase transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
+ 
+  const variantClass =
+    variant === "danger"
+      ? "border border-red-900/50 text-red-400 hover:bg-red-950/60 hover:text-red-300"
+      : "border border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-slate-100";
+ 
+  return (
+    <button
+      onClick={onClick}
+      disabled={loading}
+      className={[base, variantClass].join(" ")}
+    >
+      {loading ? (
+        /* Dots (même style que Button) */
+        <span className="flex items-center gap-1 px-2.5 py-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-delay:0ms]" />
+          <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-delay:150ms]" />
+          <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-delay:300ms]" />
+        </span>
+      ) : (
+        <>
+          {/* Mobile : icône seule */}
+          <span className="sm:hidden p-1.5">{icon}</span>
+          {/* Desktop : texte */}
+          <span className="hidden sm:inline text-xs px-3 py-1.5 tracking-wider">{label}</span>
+        </>
+      )}
+    </button>
   );
 }
 
@@ -385,21 +462,19 @@ export default function WorldDetailPage() {
           {/* Actions MJ */}
           {isMJ && (
             <div className="flex items-center gap-2">
-              <Button
+              <ResponsiveActionButton
                 variant="ghost"
-                size="sm"
+                icon={<IconPencil />}
+                label="Modifier"
                 onClick={() => navigate(`/worlds/${worldId}/edit`)}
-              >
-                Modifier
-              </Button>
-              <Button
+              />
+              <ResponsiveActionButton
                 variant="danger"
-                size="sm"
+                icon={<IconTrash />}
+                label={confirmDelete ? "Confirmer ?" : "Supprimer"}
                 loading={deleting}
                 onClick={handleDelete}
-              >
-                {confirmDelete ? "Confirmer ?" : "Supprimer"}
-              </Button>
+              />
             </div>
           )}
         </div>
