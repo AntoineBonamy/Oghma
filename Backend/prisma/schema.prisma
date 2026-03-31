@@ -28,6 +28,17 @@ enum InvitationStatus {
   DECLINED
 }
 
+enum SessionStatus {
+  OPEN // Session en cours
+  CLOSED // Session terminée
+}
+
+enum SessionEventType {
+  DICE_ROLL // Jet de dé
+  MESSAGE // Chat
+  COMBAT // Combat
+}
+
 ////////////////////
 // MODELS
 ////////////////////
@@ -46,7 +57,9 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  refreshTokens RefreshToken[]
+  refreshTokens       RefreshToken[]
+  sessionParticipants SessionParticipant[]
+  sessionEvents       SessionEvent[]
 }
 
 model RefreshToken {
@@ -103,6 +116,8 @@ model Campaign {
   description String?
   isActive    Boolean @default(false)
 
+  sessions GameSession[]
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
@@ -153,13 +168,59 @@ model DiceRoll {
   worldId     String
   userId      String
   characterId String?
+  sessionId   String?
 
   diceType String
   result   Int
 
-  world     World      @relation(fields: [worldId], references: [id])
-  user      User       @relation(fields: [userId], references: [id])
-  character Character? @relation(fields: [characterId], references: [id])
+  world     World        @relation(fields: [worldId], references: [id])
+  user      User         @relation(fields: [userId], references: [id])
+  character Character?   @relation(fields: [characterId], references: [id])
+  session   GameSession? @relation(fields: [sessionId], references: [id])
 
   createdAt DateTime @default(now())
+}
+
+model GameSession {
+  id         String   @id @default(uuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id])
+
+  sessionStatus  SessionStatus @default(OPEN)
+  openedAt DateTime      @default(now())
+  closedAt DateTime?
+
+  participants SessionParticipant[]
+  events       SessionEvent[]
+  diceRolls    DiceRoll[] // accès direct aux lancers de cette session
+
+  @@index([campaignId]) // on cherchera souvent "sessions de cette campagne"
+}
+
+model SessionParticipant {
+  id        String      @id @default(uuid())
+  sessionId String
+  session   GameSession @relation(fields: [sessionId], references: [id])
+  userId    String
+  user      User        @relation(fields: [userId], references: [id])
+
+  joinedAt DateTime  @default(now())
+  leftAt   DateTime? // null = encore connecté
+
+  @@unique([sessionId, userId]) // un joueur ne peut être dans la session qu'une fois
+}
+
+model SessionEvent {
+  id        String      @id @default(uuid())
+  sessionId String
+  session   GameSession @relation(fields: [sessionId], references: [id])
+  userId    String
+  user      User        @relation(fields: [userId], references: [id])
+
+  type    SessionEventType
+  payload Json // { diceType: "d20", result: 17, characterName: "Aragorn" }
+
+  createdAt DateTime @default(now())
+
+  @@index([sessionId]) // on récupère souvent tous les events d'une session
 }
