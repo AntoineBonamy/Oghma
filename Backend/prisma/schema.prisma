@@ -186,7 +186,7 @@ model GameSession {
   campaignId String
   campaign   Campaign @relation(fields: [campaignId], references: [id])
 
-  session  SessionStatus @default(OPEN)
+  sessionStatus  SessionStatus @default(OPEN)
   openedAt DateTime      @default(now())
   closedAt DateTime?
 

@@ -11,7 +11,7 @@ const router = express.Router({ mergeParams: true });
 
 // Ouvrir une session (MJ uniquement)
 router.post(
-  "/:worldId/campaigns/:campaignId/sessions",
+  "/worlds/:worldId/campaigns/:campaignId/sessions",
   authenticate,
   isWorldMJ,
   GameSessionController.openSessionController
@@ -19,7 +19,7 @@ router.post(
 
 // Historique des sessions d'une campagne
 router.get(
-  "/:worldId/campaigns/:campaignId/sessions",
+  "/worlds/:worldId/campaigns/:campaignId/sessions",
   authenticate,
   isWorldMember,
   GameSessionController.getSessionsByCampaignController
@@ -27,7 +27,7 @@ router.get(
 
 // Session ouverte en cours
 router.get(
-  "/:worldId/campaigns/:campaignId/sessions/open",
+  "/worlds/:worldId/campaigns/:campaignId/sessions/open",
   authenticate,
   isWorldMember,
   GameSessionController.getOpenSessionController

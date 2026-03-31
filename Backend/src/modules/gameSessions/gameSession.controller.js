@@ -106,7 +106,8 @@ export const closeSessionController = async (req, res, next) => {
 
     const session = await GameSessionModel.getSessionById({ sessionId });
     if (!session) throw new NotFoundError("Session introuvable.");
-    if (session.status === "CLOSED") {
+    
+    if (session.sessionStatus === "CLOSED") {
       throw new ConflictError("Cette session est déjà fermée.");
     }
 

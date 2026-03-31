@@ -8,6 +8,8 @@ import {
 import type { Campaign } from "@/api/campaigns";
 import { getWorldByIdApi } from "@/api/worlds";
 import type { World } from "@/api/worlds";
+import { openSessionApi, getOpenSessionApi } from "@/api/sessions";
+import type { GameSession } from "@/api/sessions";
 import { useAuth } from "@/contexts/Authcontext";
 
 ////////////////////
@@ -182,12 +184,14 @@ export default function CampaignDetailPage() {
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [world, setWorld] = useState<World | null>(null);
+  const [openSession, setOpenSession] = useState<GameSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [activating, setActivating] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [launchingSession, setLaunchingSession] = useState(false);
 
   const isMJ = world?.ownerId === user?.id;
 
@@ -197,10 +201,13 @@ export default function CampaignDetailPage() {
     Promise.all([
       getCampaignByIdApi(worldId, campaignId),
       getWorldByIdApi(worldId),
+      // On tente de récupérer la session ouverte — 404 = pas de session, c'est OK
+      getOpenSessionApi(worldId, campaignId).catch(() => null),
     ])
-      .then(([c, w]) => {
+      .then(([c, w, s]) => {
         setCampaign(c);
         setWorld(w);
+        setOpenSession(s);
       })
       .catch(() => setError("Impossible de charger la campagne."))
       .finally(() => setLoading(false));
@@ -233,6 +240,27 @@ export default function CampaignDetailPage() {
     } catch {
       setDeleting(false);
       setConfirmDelete(false);
+    }
+  };
+
+  //Lancer ou rejoindre la session
+  const handleSession = async () => {
+    if (!worldId || !campaignId) return;
+    setLaunchingSession(true);
+
+    try {
+      if (openSession) {
+        // Session déjà ouverte => rejoindre
+        navigate(`/sessions/${openSession.id}`);
+      } else {
+        // Créer et rejoindre (MJ uniquement)
+        const session = await openSessionApi(worldId, campaignId);
+        navigate(`/sessions/${session.id}`);
+      }
+    } catch {
+      // Toast plus tard
+    } finally {
+      setLaunchingSession(false);
     }
   };
 
@@ -360,20 +388,68 @@ export default function CampaignDetailPage() {
           </div>
         )}
       </div>
-      {/* ── SESSION EN COURS (si active) ── */}
+      {/* ===== BLOC SESSION ===== */}
       {campaign.isActive && (
-        <div className="bg-emerald-950/20 border border-emerald-900/30 rounded-xl p-5">
-          <div className="flex items-center gap-3">
-            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-            <div>
-              <p className="text-xs text-emerald-400 tracking-wider uppercase font-semibold">
-                Campagne active
-              </p>
-              <p className="text-sm text-slate-400 mt-0.5">
-                Cette campagne est actuellement en cours pour ce monde.
+        <div
+          className={[
+            "rounded-xl p-5 border",
+            openSession
+              ? "bg-emerald-950/20 border-emerald-900/30"
+              : "bg-slate-900 border-slate-800",
+          ].join(" ")}
+        >
+          {openSession ? (
+            // Session en cours => tout le monde peut rejoindre
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-xs text-emerald-400 tracking-wider uppercase font-semibold">
+                    Session en cours
+                  </p>
+                  <p className="text-sm text-slate-400 mt-0.5 truncate">
+                    {openSession.participants.length} joueur
+                    {openSession.participants.length > 1 ? "s" : ""} connecté
+                    {openSession.participants.length > 1 ? "s" : ""}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleSession}
+                disabled={launchingSession}
+                className="shrink-0 px-4 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white text-sm font-semibold transition-colors disabled:opacity-50"
+              >
+                {launchingSession ? "..." : "Rejoindre"}
+              </button>
+            </div>
+          ) : isMJ ? (
+            // Pas de session => le MJ peut en lancer une
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-200">
+                  Lancer une session
+                </p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Les joueurs pourront rejoindre via ce lien.
+                </p>
+              </div>
+              <button
+                onClick={handleSession}
+                disabled={launchingSession}
+                className="shrink-0 px-4 py-2 rounded-lg bg-violet-700 hover:bg-violet-600 text-white text-sm font-semibold transition-colors disabled:opacity-50"
+              >
+                {launchingSession ? "..." : "Lancer"}
+              </button>
+            </div>
+          ) : (
+            // Joueur - pas de session ouvert
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-slate-700 shrink-0" />
+              <p className="text-sm text-slate-500 italic">
+                Aucune session en cours. En attente du MJ…
               </p>
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>

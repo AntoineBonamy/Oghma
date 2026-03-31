@@ -44,7 +44,7 @@ export const getSessionsByCampaign = async ({ campaignId }) => {
 
 export const getOpenSession = async ({ campaignId }) => {
   return prisma.gameSession.findFirst({
-    where: { campaignId, status: "OPEN" },
+    where: { campaignId, sessionStatus: "OPEN" },
     include: _sessionIncludes(),
   });
 };
@@ -57,7 +57,7 @@ export const closeSession = async ({ sessionId }) => {
   return prisma.gameSession.update({
     where: { id: sessionId },
     data: {
-      status: "CLOSED",
+      sessionStatus: "CLOSED",
       closedAt: new Date(),
     },
     include: _sessionIncludes(),

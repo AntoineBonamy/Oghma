@@ -548,7 +548,7 @@ export default function WorldDetailPage() {
               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
               <div>
                 <p className="text-xs text-emerald-400 tracking-wider uppercase font-semibold">
-                  Session en cours
+                  Campagne en cours
                 </p>
                 <p className="text-sm text-slate-300">{activeCampaign.name}</p>
               </div>

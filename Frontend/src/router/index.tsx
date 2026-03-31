@@ -30,8 +30,11 @@ import CharactersPage from "@/pages/characters/CharactersPage";
 // Invitations
 import InvitationsPage from "@/pages/invitations/InvitationsPage";
 
+// Sessions
+import GameSessionPage from "@/pages/sessions/GameSessionPage";
+
 ////////////////////
-// PROTECTED ROUTE
+// PROTECTED ROUTE -- avec Layout (navbar)
 ////////////////////
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -54,6 +57,29 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   return <Layout>{children}</Layout>;
+};
+
+////////////////////
+// IMMERSIVE ROUTE — sans Layout (plein écran)
+////////////////////
+ 
+const ImmersiveRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, isLoading } = useAuth();
+ 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <span className="text-slate-600 text-sm tracking-widest uppercase animate-pulse">
+          Chargement...
+        </span>
+      </div>
+    );
+  }
+ 
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+ 
+  // Pas de Layout — rendu direct
+  return <>{children}</>;
 };
 
 ////////////////////
@@ -153,6 +179,9 @@ const AppRouter = () => {
             </ProtectedRoute>
           }
         />
+
+        {/* Routes Protégées - Session de jeu en plein écran */}
+        <Route path="/sessions/:sessionId" element={<ImmersiveRoute><GameSessionPage /></ImmersiveRoute>} />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
