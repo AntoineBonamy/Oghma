@@ -9,7 +9,6 @@ import type { Campaign } from "@/api/campaigns";
 import { getWorldByIdApi } from "@/api/worlds";
 import type { World } from "@/api/worlds";
 import { useAuth } from "@/contexts/Authcontext";
-import Button from "@/components/Button";
 
 ////////////////////
 // HELPERS
@@ -21,6 +20,152 @@ function formatDate(dateStr: string) {
     month: "long",
     year: "numeric",
   });
+}
+
+const DESCRIPTION_THRESHOLD = 300;
+
+////////////////////
+// ICONS
+////////////////////
+
+function IconPencil() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+    </svg>
+  );
+}
+
+function IconTrash() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6M14 11v6" />
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </svg>
+  );
+}
+
+function IconPlay() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polygon points="5 3 19 12 5 21 5 3" />
+    </svg>
+  );
+}
+
+////////////////////
+// EXPANDABLE DESCRIPTION
+////////////////////
+
+function ExpandableDescription({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const isLong = text.length > DESCRIPTION_THRESHOLD;
+  const displayed =
+    isLong && !expanded
+      ? text.slice(0, DESCRIPTION_THRESHOLD).trimEnd() + "…"
+      : text;
+
+  return (
+    <div className="mt-4 border-t border-slate-800 pt-4">
+      <p className="text-sm text-slate-400 leading-relaxed whitespace-pre-wrap">
+        {displayed}
+      </p>
+      {isLong && (
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-2 text-xs text-violet-400 hover:text-violet-300 transition-colors"
+        >
+          {expanded ? "Réduire ↑" : "Lire la suite ↓"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+////////////////////
+// RESPONSIVE ACTION BUTTON
+////////////////////
+
+interface ResponsiveActionButtonProps {
+  variant: "ghost" | "danger";
+  icon: React.ReactNode;
+  label: string;
+  loading?: boolean;
+  onClick: () => void;
+}
+
+function ResponsiveActionButton({
+  variant,
+  icon,
+  label,
+  loading = false,
+  onClick,
+}: ResponsiveActionButtonProps) {
+  const base =
+    "inline-flex items-center justify-center rounded font-semibold uppercase transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
+
+  const variantClass =
+    variant === "danger"
+      ? "border border-red-900/50 text-red-400 hover:bg-red-950/60 hover:text-red-300"
+      : "border border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-slate-100";
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={loading}
+      className={[base, variantClass].join(" ")}
+    >
+      {loading ? (
+        <span className="flex items-center gap-1 px-2.5 py-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-delay:0ms]" />
+          <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-delay:150ms]" />
+          <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-delay:300ms]" />
+        </span>
+      ) : (
+        <>
+          {/* Mobile : icône seule */}
+          <span className="sm:hidden p-1.5">{icon}</span>
+          {/* Desktop : texte */}
+          <span className="hidden sm:inline text-xs px-3 py-1.5 tracking-wider">
+            {label}
+          </span>
+        </>
+      )}
+    </button>
+  );
 }
 
 ////////////////////
@@ -143,19 +288,22 @@ export default function CampaignDetailPage() {
 
       {/* ── INFOS DE LA CAMPAGNE ── */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-
         {/* Ligne 1 : icône + nom + badge actif */}
         <div className="flex items-center gap-3">
-            <div className={[
-            "w-10 h-10 rounded-lg flex items-center justify-center font-bold text-lg shrink-0",
-            campaign.isActive
-              ? "bg-emerald-950/60 border border-emerald-800/40 text-emerald-400"
-              : "bg-slate-800/60 border border-slate-700/40 text-slate-400",
-          ].join(" ")}>
+          <div
+            className={[
+              "w-10 h-10 rounded-lg flex items-center justify-center font-bold text-lg shrink-0",
+              campaign.isActive
+                ? "bg-emerald-950/60 border border-emerald-800/40 text-emerald-400"
+                : "bg-slate-800/60 border border-slate-700/40 text-slate-400",
+            ].join(" ")}
+          >
             {campaign.name.charAt(0).toUpperCase()}
           </div>
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            <h1 className="text-lg font-bold text-slate-100 truncate">{campaign.name}</h1>
+            <h1 className="text-lg font-bold text-slate-100 truncate">
+              {campaign.name}
+            </h1>
             {campaign.isActive && (
               <span className="text-[9px] tracking-widest uppercase font-bold px-2 py-0.5 rounded border text-emerald-400 bg-emerald-950/60 border-emerald-800/30 shrink-0">
                 Active
@@ -166,51 +314,45 @@ export default function CampaignDetailPage() {
 
         {/* Ligne 2 : date + actions MJ */}
         <div className="flex items-center justify-between gap-2 mt-3">
-            <p className="text-xs text-slate-600 shrink-0">
-                Créée le {formatDate(campaign.createdAt)}
-            </p>
+          <p className="text-xs text-slate-600 shrink-0">
+            Créée le {formatDate(campaign.createdAt)}
+          </p>
 
-            {isMJ && (
-                <div className="flex items-center gap-2">
-                    {/* Activer (masqué si déjà active) */}
-                    {!campaign.isActive && (
-                        <Button
-                        variant="ghost"
-                        size="sm"
-                        loading={activating}
-                        onClick={handleActivate}>
-                            Activer
-                        </Button>
-                    )}
-                    <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => navigate(`/worlds/${worldId}/campaigns/${campaignId}/edit`)}
-                    >
-                        Modifier
-                    </Button>
-                    <Button
+          {isMJ && (
+            <div className="flex items-center gap-2">
+              {/* Activer (masqué si déjà active) */}
+              {!campaign.isActive && (
+                <ResponsiveActionButton
+                  variant="ghost"
+                  icon={<IconPlay />}
+                  label="Activer"
+                  loading={activating}
+                  onClick={handleActivate}
+                />
+              )}
+              <ResponsiveActionButton
+                variant="ghost"
+                icon={<IconPencil />}
+                label="Modifier"
+                onClick={() =>
+                  navigate(`/worlds/${worldId}/campaigns/${campaignId}/edit`)
+                }
+              />
+              <ResponsiveActionButton
                 variant="danger"
-                size="sm"
+                icon={<IconTrash />}
+                label={confirmDelete ? "Confirmer ?" : "Supprimer"}
                 loading={deleting}
                 onClick={handleDelete}
-              >
-                {confirmDelete ? "Confirmer ?" : "Supprimer"}
-              </Button>
-                </div>
-            )}
+              />
+            </div>
+          )}
         </div>
 
-        {/* Description */}
-        {campaign.description && (
-          <div className="mt-4 border-t border-slate-800 pt-4">
-            <p className="text-sm text-slate-400 leading-relaxed whitespace-pre-wrap">
-              {campaign.description}
-            </p>
-          </div>
-        )}
-        {/* Empty state description */}
-        {!campaign.description && (
+        {/* Description expandable */}
+        {campaign.description ? (
+          <ExpandableDescription text={campaign.description} />
+        ) : (
           <div className="mt-4 border-t border-slate-800 pt-4">
             <p className="text-sm text-slate-600 italic">
               Aucune description pour cette campagne.
